@@ -1,0 +1,11 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=3104
+
+The file "pyref.vim" is a plug-in for the Vim text editor that maps the <F1> key in Python buffers to search through the Python language and library reference documentation for the keyword or identifier at the current cursor position and open the first match in your web browser. When no GUI is available a command-line web browser like lynx or w3m will be used, otherwise the plug-in prefers a graphical web browser like Mozilla Firefox or Google Chrome. For more information about the plug-in please refer to its homepage or the project page on GitHub:
+
+ http://peterodding.com/code/vim/pyref/
+ http://github.com/xolox/vim-pyref
+
+If you have questions, bug reports, suggestions, etc. the author can be contacted at peter@peterodding.com. If you like this plug-in please vote for it below!
+
+ALTERNATIVES
+If you don't like using your web browser to read documentation but would rather do so inside Vim, or if you need the documentation of a module that's not in the Python standard library, try vimscript #910 and vimscript #1112. Both of these use the "pydoc.py" Python script included with the standard Python installation, which means they automatically work on all modules known to Python (including user-defined modules).
