@@ -1,115 +1,99 @@
 " Vim plug-in
 " Maintainer: Peter Odding <peter@peterodding.com>
-" Last Change: June 1, 2010
+" Last Change: June 3, 2010
 " URL: http://peterodding.com/code/vim/pyref
 " License: MIT
+" Version: 0.4
 
-" Description:
-" This is a Vim plug-in that maps <F1> in Python buffers to search the Python
-" language and library reference documentation for the keyword or identifier
-" at the current cursor position and open the first match in your web browser.
-" This should work in both graphical Vim and console Vim. The search works by
-" scanning through a special index file with keyword, URL pairs separated by
-" tabs and delimited by newlines. You can create this index yourself using a
-" Python script I've written or you can download an index that I'm making
-" available based on http://docs.python.org/.
-"
-" Configuration options:
-"
-"  "pyref_mapping": If you don't want this plug-in to use the <F1> key then
-"                   you can change this global variable according to the
-"                   syntax expected by :imap and :nmap.
-"  "pyref_browser": If the plug-in doesn't work out of the box you might have
-"                   to change this global variable to the filename or pathname
-"                   of your web browser (the plug-in tries to find a sensible
-"                   default but that might not always work).
-"  "pyref_index":   Set this global variable to change the location of the
-"                   index file from its default (on Windows the default is
-"                   "~/_vimpythonindex", on UNIX it is "~/.vimpythonindex").
-"  "pyref_mirror":  Sometimes I don't have an internet connection available,
-"                   therefor I've installed the Ubuntu package `python2.6-doc'
-"                   which puts the Python language and library reference in
-"                   /usr/share/doc/python2.6/html/. If you're using the exact
-"                   same package everything should just work, but if you've
-"                   installed the Python documentation in another location
-"                   you should set this global variable to the pathname of the
-"                   directory containing the HTML files.
-"
-" Note that you can change any of these options permanently by putting the
-" relevant :let statements in your ~/.vimrc script.
-"
-" Tweaks:
-" You can improve Vim's startup speed slightly by setting the global variables
-" "pyref_browser" and/or "pyref_mirror" in your ~/.vimrc because that avoids
-" querying the file system and searching the $PATH.
+" Support for automatic update using the GLVS plug-in.
+" GetLatestVimScripts: 3104 1 :AutoInstall: pyref.zip
 
-" Define the configuration defaults.
+" Don't source the plug-in when its already been loaded or &compatible is set.
+if &cp || exists('loaded_pyref')
+  finish
+endif
 
-if !exists('pyref_index')
-  if has('win32') || has('win64')
-    let pyref_index = '~/_vimpythonindex'
-  else
-    let pyref_index = '~/.vimpythonindex'
+" Configuration defaults. {{{1
+
+" Use a script-local function to define the configuration defaults so that we
+" don't pollute Vim's global scope with temporary variables.
+
+function! s:CheckOptions()
+  if !exists('g:pyref_mapping')
+    let g:pyref_mapping = '<F1>'
   endif
-endif
-
-if !exists('pyref_mirror')
-  let s:local_mirror = '/usr/share/doc/python2.6/html'
-  if isdirectory(s:local_mirror)
-    let pyref_mirror = 'file://' . s:local_mirror
-  else
-    let pyref_mirror = 'http://docs.python.org'
-  endif
-  unlet s:local_mirror
-endif
-
-if !exists('pyref_mapping')
-  let pyref_mapping = '<F1>'
-endif
-
-if !exists('pyref_browser')
-  if has('win32') || has('win64')
-    " On Windows the default web browser is accessible using the START command.
-    let pyref_browser = 'CMD /C START ""'
-  else
-    " On UNIX we decide whether to use a CLI or GUI web browser based on
-    " whether the $DISPLAY environment variable is set.
-    if $DISPLAY == ''
-      let s:known_browsers = ['lynx', 'links', 'w3m']
+  if !exists('g:pyref_mirror')
+    let local_mirror = '/usr/share/doc/python2.6/html'
+    if isdirectory(local_mirror)
+      let g:pyref_mirror = 'file://' . local_mirror
     else
-      " Note: Don't use `xdg-open' here, it ignores fragment identifiers :-S
-      let s:known_browsers = ['gnome-open', 'firefox', 'google-chrome', 'konqueror']
-    endif
-    " Otherwise we search for a sensible default browser.
-    let s:search_path = substitute(substitute($PATH, ',', '\\,', 'g'), ':', ',', 'g')
-    for s:browser in s:known_browsers
-      " Use globpath()'s third argument where possible (since Vim 7.3?).
-      try
-        let s:matches = split(globpath(s:search_path, s:browser, 1), '\n')
-      catch
-        let s:matches = split(globpath(s:search_path, s:browser), '\n')
-      endtry
-      if len(s:matches) > 0
-        let pyref_browser = s:matches[0]
-        break
-      endif
-    endfor
-    unlet s:search_path s:known_browsers s:browser s:matches
-    if !exists('pyref_browser')
-      let message = "pyref.vim: Failed to find a default web browser!"
-      echoerr message . "\nPlease set the global variable `pyref_browser' manually."
-      finish
+      let g:pyref_mirror = 'http://docs.python.org'
     endif
   endif
+  if !exists('g:pyref_index')
+    if has('win32') || has('win64')
+      let g:pyref_index = '~/vimfiles/pyref/index'
+    else
+      let g:pyref_index = '~/.vim/pyref/index'
+    endif
+  endif
+  if !filereadable(fnamemodify(g:pyref_index, ':p'))
+    let msg = "pyref.vim: The index file doesn't exist or isn't readable! (%s)"
+    echoerr printf(msg, g:pyref_index)
+    return 0 " Initialization failed.
+  endif
+  if !exists('g:pyref_browser')
+    if has('win32') || has('win64')
+      " On Windows the default web browser is accessible using the START command.
+      let g:pyref_browser = 'CMD /C START ""'
+    else
+      " On UNIX we decide whether to use a CLI or GUI web browser based on
+      " whether the $DISPLAY environment variable is set.
+      if $DISPLAY == ''
+        let known_browsers = ['lynx', 'links', 'w3m']
+      else
+        " Note: Don't use `xdg-open' here, it ignores fragment identifiers :-S
+        let known_browsers = ['gnome-open', 'firefox', 'google-chrome', 'konqueror']
+      endif
+      " Otherwise we search for a sensible default browser.
+      let search_path = substitute(substitute($PATH, ',', '\\,', 'g'), ':', ',', 'g')
+      for browser in known_browsers
+        " Use globpath()'s third argument where possible (since Vim 7.3?).
+        try
+          let matches = split(globpath(search_path, browser, 1), '\n')
+        catch
+          let matches = split(globpath(search_path, browser), '\n')
+        endtry
+        if len(matches) > 0
+          let g:pyref_browser = matches[0]
+          break
+        endif
+      endfor
+      if !exists('g:pyref_browser')
+        let msg = "pyref.vim: Failed to find a default web browser!"
+        echoerr msg . "\nPlease set the global variable `pyref_browser' manually."
+        return 0 " Initialization failed.
+      endif
+    endif
+  endif
+  return 1 " Initialization successful.
+endfunction
+
+if s:CheckOptions()
+  " Don't reload the plug-in once its been successfully initialized.
+  let loaded_pyref = 1
+else
+  " Don't finish sourcing the script when there's no point.
+  finish
 endif
 
-" Use an automatic command to map <F1> only inside Python buffers.
+" Automatic command to define key-mapping. {{{1
 
 augroup PluginPyRef
   autocmd! FileType python call s:DefineMappings()
 augroup END
 
-function! s:DefineMappings()
+function! s:DefineMappings() " {{{1
   let command = '%s <silent> <buffer> %s %s:call <Sid>PyRef()<CR>'
   " Always define the normal mode mapping.
   execute printf(command, 'nmap', g:pyref_mapping, '')
@@ -120,16 +104,7 @@ function! s:DefineMappings()
   endif
 endfunction
 
-" This list of lists contains [url_format, method_pattern] pairs that are used
-" to recognize calls to methods of objects that are one of Python's standard
-" types: strings, lists, dictionaries and file handles.
-let s:object_methods = [
-      \ ['library/stdtypes.html#str.%s', '\.\@<=\(capitalize\|center\|count\|decode\|encode\|endswith\|expandtabs\|find\|format\|index\|isalnum\|isalpha\|isdigit\|islower\|isspace\|istitle\|isupper\|join\|ljust\|lower\|lstrip\|partition\|replace\|rfind\|rindex\|rjust\|rpartition\|rsplit\|rstrip\|split\|splitlines\|startswith\|strip\|swapcase\|title\|translate\|upper\|zfill\)$'],
-      \ ['tutorial/datastructures.html#more-on-lists', '\.\@<=\(append\|count\|extend\|index\|insert\|pop\|remove\|reverse\|sort\)$'],
-      \ ['library/stdtypes.html#dict.%s', '\.\@<=\(clear\|copy\|fromkeys\|get\|has_key\|items\|iteritems\|iterkeys\|itervalues\|keys\|pop\|popitem\|setdefault\|update\|values\)$'],
-      \ ['library/stdtypes.html#file.%s', '\.\@<=\(close\|closed\|encoding\|errors\|fileno\|flush\|isatty\|mode\|name\|newlines\|next\|read\|readinto\|readline\|readlines\|seek\|softspace\|tell\|truncate\|write\|writelines\|xreadlines\)$']]
-
-function! s:PyRef()
+function! s:PyRef() " {{{1
 
   " Get the identifier under the cursor including any dots to match
   " identifiers like `os.path.join' instead of single words like `join'.
@@ -157,7 +132,7 @@ function! s:PyRef()
     let lines = []
     echoerr "pyref.vim: Failed to read index file! (" . indexfile . ")"
   endtry
-  if s:JumpToEntry(lines, '^\(module-\)\?' . pattern . '\t')
+  if s:JumpToEntry(lines, '^\(module-\|exceptions\.\)\?' . pattern . '\t')
     return
   endif
 
@@ -196,7 +171,16 @@ function! s:PyRef()
 
 endfunction
 
-function! s:JumpToEntry(lines, pattern)
+" This list of lists contains [url_format, method_pattern] pairs that are used
+" to recognize calls to methods of objects that are one of Python's standard
+" types: strings, lists, dictionaries and file handles.
+let s:object_methods = [
+      \ ['library/stdtypes.html#str.%s', '\.\@<=\(capitalize\|center\|count\|decode\|encode\|endswith\|expandtabs\|find\|format\|index\|isalnum\|isalpha\|isdigit\|islower\|isspace\|istitle\|isupper\|join\|ljust\|lower\|lstrip\|partition\|replace\|rfind\|rindex\|rjust\|rpartition\|rsplit\|rstrip\|split\|splitlines\|startswith\|strip\|swapcase\|title\|translate\|upper\|zfill\)$'],
+      \ ['tutorial/datastructures.html#more-on-lists', '\.\@<=\(append\|count\|extend\|index\|insert\|pop\|remove\|reverse\|sort\)$'],
+      \ ['library/stdtypes.html#dict.%s', '\.\@<=\(clear\|copy\|fromkeys\|get\|has_key\|items\|iteritems\|iterkeys\|itervalues\|keys\|pop\|popitem\|setdefault\|update\|values\)$'],
+      \ ['library/stdtypes.html#file.%s', '\.\@<=\(close\|closed\|encoding\|errors\|fileno\|flush\|isatty\|mode\|name\|newlines\|next\|read\|readinto\|readline\|readlines\|seek\|softspace\|tell\|truncate\|write\|writelines\|xreadlines\)$']]
+
+function! s:JumpToEntry(lines, pattern) " {{{1
   let index = match(a:lines, a:pattern)
   if index >= 0
     let url = split(a:lines[index], '\t')[1]
@@ -206,7 +190,7 @@ function! s:JumpToEntry(lines, pattern)
   return 0
 endfunction
 
-function! s:OpenBrowser(url)
+function! s:OpenBrowser(url) " {{{1
   let browser = g:pyref_browser
   if browser =~ '\<\(lynx\|links\|w3m\)\>'
     execute '!' . browser fnameescape(a:url)
