@@ -1,0 +1,32 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+<html>
+ <head>
+  <title>pyref - Context-sensitive documentation for Python source code in Vim</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ </head>
+ <body>
+
+  <h1><code>pyref</code> - Context-sensitive documentation for Python source code in Vim</h1>
+
+  <p>The file <a href="http://github.com/xolox/vim-pyref/blob/master/pyref.vim">pyref.vim</a> is a plug-in for the Vim text editor that maps the <code>&lt;F1&gt;</code> key in Python buffers to search through the Python language and library reference documentation for the keyword or identifier at the current cursor position and open the first match in your web browser. When no GUI is available a command-line web browser like <code>lynx</code> or <code>w3m</code> will be used, otherwise the plug-in prefers a graphical web browser like Mozilla Firefox or Google Chrome.</p>
+
+  <p>The search works by scanning through a special index file with keyword, URL pairs separated by tabs and delimited by newlines. You can create this index yourself using a Python script I've written (see <a href="http://github.com/xolox/vim-pyref/blob/master/create-index.py">create-index.py</a>) or you can download the index that I've already created (see <a href="http://github.com/xolox/vim-pyref/blob/master/vimpythonindex">vimpythonindex</a>).</p>
+
+  <h2>Usage</h2>
+
+  <p>Right-click and save <a href="http://github.com/xolox/vim-pyref/raw/master/pyref.vim">pyref.vim</a> as <code>~/.vim/plugin/pyref.vim</code> (if you're on Windows save the file as <code>%USERPROFILE%\vimfiles\plugin\pyref.vim</code>), likewise save <a href="http://github.com/xolox/vim-pyref/raw/master/vimpythonindex">vimpythonindex</a> as <code>~/.vimpythonindex</code> (if you're on Windows then save this file as <code>%USERPROFILE%\_vimpythonindex</code>) and restart Vim. Now try it out: Open some Python source code in Vim and press the <code>&lt;F1&gt;</code> key. If it doesn't work out of the box you probably need to change the global variable <code>pyref_browser</code> to the filename or pathname of a working web browser executable, e.g. inside Vim type:</p>
+
+  <pre><code>:let pyref_browser = '/usr/bin/konqueror'</code></pre>
+
+  <h2>Contact</h2>
+
+  <p>If you have questions, bug reports, suggestions, etc. the author can be contacted at <a>&#x70;&#101;&#116;&#x65;&#x72;&#64;&#x70;&#x65;&#116;&#x65;&#x72;&#111;&#x64;&#100;&#x69;&#x6e;&#x67;&#46;&#99;&#111;&#109;</a>. The latest version is available at <a href="http://peterodding.com/code/vim/pyref">http://peterodding.com/code/vim/pyref</a> and <a href="http://github.com/xolox/vim-pyref">http://github.com/xolox/vim-pyref</a>. If you like the script you can vote for it on <a href="http://www.vim.org/scripts/script.php?script_id=3104">vim.org</a>.</p>
+
+  <h2>License</h2>
+
+  <p>Vim-PyRef is licensed under the MIT license.<br>
+  Copyright 2010 Peter Odding <a>&#112;&#x65;&#x74;&#x65;&#114;&#64;&#112;&#x65;&#x74;&#101;&#114;&#x6f;&#x64;&#100;&#105;&#x6e;&#x67;&#x2e;&#99;&#111;&#109;</a>.</p>
+
+ </body>
+</html>

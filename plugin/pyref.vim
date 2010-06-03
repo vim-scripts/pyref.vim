@@ -1,6 +1,6 @@
 " Vim plug-in
 " Maintainer: Peter Odding <peter@peterodding.com>
-" Last Change: May 25, 2010
+" Last Change: June 1, 2010
 " URL: http://peterodding.com/code/vim/pyref
 " License: MIT
 
@@ -72,10 +72,17 @@ if !exists('pyref_browser')
     " On Windows the default web browser is accessible using the START command.
     let pyref_browser = 'CMD /C START ""'
   else
+    " On UNIX we decide whether to use a CLI or GUI web browser based on
+    " whether the $DISPLAY environment variable is set.
+    if $DISPLAY == ''
+      let s:known_browsers = ['lynx', 'links', 'w3m']
+    else
+      " Note: Don't use `xdg-open' here, it ignores fragment identifiers :-S
+      let s:known_browsers = ['gnome-open', 'firefox', 'google-chrome', 'konqueror']
+    endif
     " Otherwise we search for a sensible default browser.
     let s:search_path = substitute(substitute($PATH, ',', '\\,', 'g'), ':', ',', 'g')
-    " Note: Don't use `xdg-open' here, it ignores fragment identifiers :-S
-    for s:browser in ['gnome-open', 'firefox', 'google-chrome']
+    for s:browser in s:known_browsers
       " Use globpath()'s third argument where possible (since Vim 7.3?).
       try
         let s:matches = split(globpath(s:search_path, s:browser, 1), '\n')
@@ -87,7 +94,7 @@ if !exists('pyref_browser')
         break
       endif
     endfor
-    unlet s:search_path s:browser s:matches
+    unlet s:search_path s:known_browsers s:browser s:matches
     if !exists('pyref_browser')
       let message = "pyref.vim: Failed to find a default web browser!"
       echoerr message . "\nPlease set the global variable `pyref_browser' manually."
@@ -104,8 +111,13 @@ augroup END
 
 function! s:DefineMappings()
   let command = '%s <silent> <buffer> %s %s:call <Sid>PyRef()<CR>'
-  execute printf(command, 'inoremap', g:pyref_mapping, '<C-O>')
-  execute printf(command, 'nnoremap', g:pyref_mapping, '')
+  " Always define the normal mode mapping.
+  execute printf(command, 'nmap', g:pyref_mapping, '')
+  " Don't create the insert mode mapping when "g:pyref_mapping" has been
+  " changed to something like K because it'll conflict with regular input.
+  if g:pyref_mapping =~ '^<[^>]\+>'
+    execute printf(command, 'imap', g:pyref_mapping, '<C-O>')
+  endif
 endfunction
 
 " This list of lists contains [url_format, method_pattern] pairs that are used
@@ -137,13 +149,9 @@ function! s:PyRef()
   " Escape any dots in the expression so it can be used as a pattern.
   let pattern = substitute(ident, '\.', '\\.', 'g')
 
-  " Escape the browser path so it can be used as shell command.
-  let browser = shellescape(g:pyref_browser)
-
   " Search for an exact match of a module name or identifier in the index.
   let indexfile = fnamemodify(g:pyref_index, ':p')
   try
-    
     let lines = readfile(indexfile)
   catch
     let lines = []
@@ -170,6 +178,19 @@ function! s:PyRef()
     return
   endif
 
+  " Split the expression on all dots and search for a progressively smaller
+  " suffix to resolve object attributes like "self.parser.add_option" to
+  " global identifiers like "optparse.OptionParser.add_option". This relies
+  " on the uniqueness of the method names in the standard library.
+  let parts = split(ident, '\.')
+  while len(parts) > 1
+    call remove(parts, 0)
+    let pattern = join(parts, '\.') . '$'
+    if s:JumpToEntry(lines, pattern)
+      return
+    endif
+  endwhile
+
   " As a last resort, search all of http://docs.python.org/ using Google.
   call s:OpenBrowser('http://google.com/search?btnI&q=inurl:docs.python.org/+' . ident)
 
@@ -187,7 +208,7 @@ endfunction
 
 function! s:OpenBrowser(url)
   let browser = g:pyref_browser
-  if browser =~ '\<\(lynx\|links\)\>'
+  if browser =~ '\<\(lynx\|links\|w3m\)\>'
     execute '!' . browser fnameescape(a:url)
   else
     if browser !~ '^CMD /C START'
