@@ -99,7 +99,7 @@ If you like the script please vote for it on www.vim.org [10].
 ==============================================================================
 License
 
-Vim-PyRef is licensed under the MIT license [11].  
+This software is licensed under the MIT license [11].  
 © 2010 Peter Odding <peter@peterodding.com>.
 
 ============================================================================== 
@@ -110,8 +110,8 @@ References
 [3] http://python.org/
 [4] http://docs.python.org/reference/index.html
 [5] http://docs.python.org/library/index.html
-[6] http://github.com/xolox/vim-pyref/blob/master/create-index.py
-[7] http://github.com/xolox/vim-pyref/blob/master/vimpythonindex
+[6] http://github.com/xolox/vim-pyref/blob/master/spider.py
+[7] http://github.com/xolox/vim-pyref/blob/master/index
 [8] http://github.com/downloads/xolox/vim-pyref/pyref-latest.zip
 [9] http://vimdoc.sourceforge.net/htmldoc/pi_getscript.html#glvs-usage
 [10] http://www.vim.org/scripts/script.php?script_id=3104
