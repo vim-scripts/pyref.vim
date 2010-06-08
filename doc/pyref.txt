@@ -99,10 +99,10 @@ If you like the script please vote for it on www.vim.org [10].
 ==============================================================================
 License
 
-This software is licensed under the MIT license [11].  
+This software is licensed under the MIT license [11].
 © 2010 Peter Odding <peter@peterodding.com>.
 
-============================================================================== 
+==============================================================================
 References
 
 [1] http://github.com/xolox/vim-pyref/blob/master/pyref.vim
@@ -112,7 +112,7 @@ References
 [5] http://docs.python.org/library/index.html
 [6] http://github.com/xolox/vim-pyref/blob/master/spider.py
 [7] http://github.com/xolox/vim-pyref/blob/master/index
-[8] http://github.com/downloads/xolox/vim-pyref/pyref-latest.zip
+[8] http://github.com/downloads/xolox/vim-pyref/pyref-0.5.zip
 [9] http://vimdoc.sourceforge.net/htmldoc/pi_getscript.html#glvs-usage
 [10] http://www.vim.org/scripts/script.php?script_id=3104
 [11] http://en.wikipedia.org/wiki/MIT_License
