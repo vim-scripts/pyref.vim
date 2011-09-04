@@ -1,8 +1,9 @@
 " Vim auto-load script
 " Author: Peter Odding <peter@peterodding.com>
-" Last Change: December 19, 2010
+" Last Change: September 4, 2011
 " URL: http://peterodding.com/code/vim/pyref/
 
+let g:xolox#pyref#version = '0.7.5'
 let s:script = expand('<sfile>:p:~')
 
 function! xolox#pyref#enable() " {{{1
@@ -27,7 +28,7 @@ endfunction
 
 function! xolox#pyref#complete(arglead, cmdline, cursorpos) " {{{1
   let entries = map(s:read_index(), 'matchstr(v:val, ''^\S\+'')')
-  let pattern = xolox#escape#pattern(a:arglead)
+  let pattern = xolox#misc#escape#pattern(a:arglead)
   call filter(entries, 'v:val =~ pattern')
   if len(entries) > &lines
     let entries = entries[0 : &lines - 1]
@@ -38,7 +39,7 @@ endfunction
 
 function! xolox#pyref#lookup(identifier) " {{{1
 
-  let ident = xolox#trim(a:identifier)
+  let ident = xolox#misc#str#trim(a:identifier)
 
   " Do something useful when there's nothing at the current position.
   if ident == ''
@@ -96,12 +97,12 @@ function! xolox#pyref#lookup(identifier) " {{{1
   endwhile
 
   " As a last resort, try Google's "I'm Feeling Lucky" search.
-  call xolox#open#url('http://google.com/search?btnI&q=python+' . ident)
+  call xolox#misc#open#url('http://google.com/search?btnI&q=python+' . ident)
 
 endfunction
 
 function! s:try_lookup(lines, pattern) " {{{1
-  call xolox#debug("%s: Trying to match pattern %s", s:script, a:pattern)
+  call xolox#misc#msg#debug("pyref.vim %s: Trying to match pattern %s", g:xolox#pyref#version, a:pattern)
   let index = match(a:lines, a:pattern)
   if index >= 0
     let url = split(a:lines[index], '\t')[1]
@@ -111,8 +112,8 @@ function! s:try_lookup(lines, pattern) " {{{1
 endfunction
 
 function! s:show_match(url) " {{{1
-  let python_docs = s:get_option('pyref_python')
-  let django_docs = s:get_option('pyref_django')
+  let python_docs = xolox#misc#option#get('pyref_python')
+  let django_docs = xolox#misc#option#get('pyref_django')
   let url = a:url
   if url =~ '^http://docs\.python\.org/' && isdirectory(python_docs)
     let url = substitute(url, '^http://docs\.python\.org', 'file://' . python_docs, '')
@@ -120,24 +121,14 @@ function! s:show_match(url) " {{{1
     let url = substitute(url, '/#', '.html#', '')
     let url = substitute(url, '^http://docs\.djangoproject\.com/en/1\.1', 'file://' . django_docs, '')
   endif
-  call xolox#open#url(url)
-endfunction
-
-function! s:get_option(name) " {{{1
-  if exists('b:' . a:name)
-    return eval('b:' . a:name)
-  elseif exists('g:' . a:name)
-    return eval('g:' . a:name)
-  else
-    return ""
-  endif
+  call xolox#misc#open#url(url)
 endfunction
 
 function! s:find_index() " {{{1
   let abspath = fnamemodify(g:pyref_index, ':p')
   if !filereadable(abspath)
-    let msg = "%s: The index file doesn't exist or isn't readable! (%s)"
-    call xolox#warning(msg, s:script, index)
+    let msg = "pyref.vim %s: The index file doesn't exist or isn't readable! (%s)"
+    call xolox#misc#msg#warn(msg, g:xolox#pyref#version, index)
     return
   endif
   return abspath
@@ -148,7 +139,7 @@ function! s:read_index() " {{{1
   try
     return readfile(indexfile)
   catch
-    call xolox#warning("%s: Failed to read index file! (%s)", s:script, indexfile)
+    call xolox#misc#msg#warn("pyref.vim %s: Failed to read index file! (%s)", g:xolox#pyref#version, indexfile)
     return []
   endtry
 endfunction

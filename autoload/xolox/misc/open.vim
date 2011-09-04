@@ -1,21 +1,16 @@
 " Vim auto-load script
 " Author: Peter Odding <peter@peterodding.com>
-" Last Change: December 4, 2010
-" URL: http://peterodding.com/code/vim/open-associated-programs/
-" Version: 1.2.1
+" Last Change: June 18, 2011
+" URL: http://peterodding.com/code/vim/misc/
 
-" Support for automatic update using the GLVS plug-in.
-" GetLatestVimScripts: 3242 1 :AutoInstall: open-associated-programs.zip
-
-if !exists('s:script')
-  let s:script = expand('<sfile>:p:~')
-  let s:enoimpl = "%s: %s() hasn't been implemented for your platform!"
-  let s:enoimpl .= " If you have suggestions, please contact peter@peterodding.com."
+if !exists('s:version')
+  let s:version = '1.0'
+  let s:enoimpl = "open.vim %s: %s() hasn't been implemented for your platform! If you have suggestions, please contact peter@peterodding.com."
   let s:handlers = ['gnome-open', 'kde-open', 'exo-open', 'xdg-open']
 endif
 
-function! xolox#open#file(path, ...)
-  if xolox#is_windows()
+function! xolox#misc#open#file(path, ...)
+  if xolox#misc#os#is_win()
     try
       call xolox#shell#open_with_windows_shell(a:path)
     catch /^Vim\%((\a\+)\)\=:E117/
@@ -30,17 +25,17 @@ function! xolox#open#file(path, ...)
   else
     for handler in s:handlers + a:000
       if executable(handler)
-        call xolox#debug("%s: Using `%s' to open %s", s:script, handler, a:path)
+        call xolox#misc#msg#debug("open.vim %s: Using '%s' to open '%s'.", s:version, handler, a:path)
         let cmd = shellescape(handler) . ' ' . shellescape(a:path) . ' 2>&1'
         call s:handle_error(cmd, system(cmd))
         return
       endif
     endfor
   endif
-  throw printf(s:enoimpl, s:script, 'xolox#open#file')
+  throw printf(s:enoimpl, s:script, 'xolox#misc#open#file')
 endfunction
 
-function! xolox#open#url(url)
+function! xolox#misc#open#url(url)
   let url = a:url
   if url !~ '^\w\+://'
     if url !~ '@'
@@ -58,17 +53,17 @@ function! xolox#open#url(url)
       endif
     endfor
   endif
-  call xolox#open#file(url, 'firefox', 'google-chrome')
+  call xolox#misc#open#file(url, 'firefox', 'google-chrome')
 endfunction
 
 function! s:handle_error(cmd, output)
   if v:shell_error
-    let message = "%s: Failed to execute program! (command line: %s%s)"
-    let output = strtrans(xolox#trim(a:output))
+    let message = "open.vim %s: Failed to execute program! (command line: %s%s)"
+    let output = strtrans(xolox#misc#str#trim(a:output))
     if output != ''
       let output = ", output: " . string(output)
     endif
-    throw printf(message, s:script, a:cmd, output)
+    throw printf(message, s:version, a:cmd, output)
   endif
 endfunction
 
